@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Create refresh button
         const refreshButton = document.createElement('button');
-        refreshButton.className = 'bg-white text-gray-800 text-xs px-2 py-1 rounded hover:bg-gray-100 transition';
+        refreshButton.className = 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition';
         refreshButton.textContent = 'Refresh';
         refreshButton.onclick = applyUpdates;
         
