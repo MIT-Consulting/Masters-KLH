@@ -260,8 +260,8 @@ body.dark {
     height: 40px;
     width: auto;
     filter: brightness(0) invert(1); /* Makes the logo white */
-    align-self: flex-end; /* Aligns the logo to the bottom of the flex container */
-    margin-bottom: 1em; /* Changed from 2px to 1em as requested */
+    align-self: center; /* Vertically center the logo */
+    margin-bottom: 1em;
 }
 
 /* Ensure logo displays correctly on smaller screens */
@@ -296,4 +296,41 @@ body.dark {
 /* Remove font-bold from all elements */
 .font-bold {
     font-weight: normal !important;
+}
+
+/* Responsive header layout for narrow viewports */
+@media (max-width: 768px) {
+    /* Reverse the flex direction of the main container */
+    header .container {
+        flex-direction: column;
+        align-items: center; /* Center items horizontally */
+    }
+
+    /* Adjust left side elements */
+    header .flex.items-center:first-child {
+        flex-direction: column-reverse; /* Put the heading above the logo */
+        width: 100%;
+        margin-bottom: 0.75rem; /* Tailwind mb-3 equivalent */
+        align-items: center; /* Center logo and title block */
+    }
+
+    /* Center and adjust the heading */
+    header h1 {
+        margin-bottom: 0.75rem; /* Tailwind mb-3 equivalent */
+        text-align: center;
+        width: 100%;
+    }
+
+    /* Adjust logo position */
+    header .masters-logo {
+        margin-right: 0; /* Remove right margin */
+        margin-bottom: 0.5rem; /* Add some space below the logo */
+    }
+
+    /* Right side elements get full width and reduced gap */
+    header .flex.items-center.gap-4 {
+        width: 100%;
+        justify-content: center; /* Center the theme toggle and live updates */
+        gap: 0.5rem; /* Tailwind gap-2 equivalent */
+    }
 } 
