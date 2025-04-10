@@ -7,9 +7,155 @@ let realtimeChannel
 // Flag to track if updates are available
 let updatesAvailable = false
 
+// Theme management
+const THEME_KEY = 'masters-pool-theme';
+const themes = ['light', 'dark', 'system'];
+let currentThemeIndex = 2; // Default to system theme
+
+// Function to initialize theme
+function initializeTheme() {
+    // Get saved theme from localStorage or default to system
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'system';
+    currentThemeIndex = themes.indexOf(savedTheme);
+    if (currentThemeIndex === -1) currentThemeIndex = 2; // Fallback to system if invalid
+    setTheme(themes[currentThemeIndex]);
+}
+
+// Function to apply the theme to the document
+function applyTheme(theme) {
+    const htmlElement = document.documentElement;
+    htmlElement.setAttribute('data-theme', theme);
+    
+    // If system theme, check user preference
+    if (theme === 'system') {
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark');
+        } else {
+            document.body.classList.remove('dark');
+        }
+    } else if (theme === 'dark') {
+        document.body.classList.add('dark');
+    } else {
+        document.body.classList.remove('dark');
+    }
+
+    // Update the theme icons
+    updateThemeIcons(theme);
+}
+
+// Function to update the theme icons
+function updateThemeIcons(theme) {
+    // Hide all theme icons
+    document.querySelectorAll('.theme-icon').forEach(icon => {
+        icon.classList.add('hidden');
+    });
+    
+    // Show the current theme icon
+    const currentIcon = document.querySelector(`.theme-icon-${theme}`);
+    if (currentIcon) {
+        currentIcon.classList.remove('hidden');
+    }
+    
+    // Update the theme text
+    const themeText = document.querySelector('.theme-text');
+    if (themeText) {
+        themeText.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+    }
+}
+
+// Function to set the theme
+function setTheme(theme) {
+    localStorage.setItem(THEME_KEY, theme);
+    applyTheme(theme);
+    showThemeNotification(theme);
+}
+
+// Function to show theme notification
+function showThemeNotification(theme) {
+    // Remove existing notification if any
+    const existingNotification = document.querySelector('.theme-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Create notification
+    const notification = document.createElement('div');
+    notification.className = 'theme-notification';
+    
+    // Theme icon
+    const iconDiv = document.createElement('div');
+    iconDiv.className = 'theme-toggle-icon';
+    
+    let iconSvg;
+    if (theme === 'light') {
+        iconSvg = '<svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" /></svg>';
+    } else if (theme === 'dark') {
+        iconSvg = '<svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" /></svg>';
+    } else {
+        iconSvg = '<svg class="theme-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25" /></svg>';
+    }
+    
+    iconDiv.innerHTML = iconSvg;
+    
+    const text = document.createElement('span');
+    text.textContent = `${theme.charAt(0).toUpperCase() + theme.slice(1)} mode activated`;
+    
+    notification.appendChild(iconDiv);
+    notification.appendChild(text);
+    document.body.appendChild(notification);
+    
+    // Show notification with animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        
+        // Remove from DOM after animation completes
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
+// Function to toggle theme
+function toggleTheme() {
+    currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+    setTheme(themes[currentThemeIndex]);
+}
+
+// Set up system theme change detection
+function setupSystemThemeDetection() {
+    if (window.matchMedia) {
+        const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        darkModeMediaQuery.addEventListener('change', (e) => {
+            // Only update if we're using system theme
+            if (document.documentElement.getAttribute('data-theme') === 'system') {
+                if (e.matches) {
+                    document.body.classList.add('dark');
+                } else {
+                    document.body.classList.remove('dark');
+                }
+            }
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     const COURSE_PAR = 72;
     const WD_MC_SCORE = 82; // Score assigned for WD/MC unplayed rounds
+    
+    // Initialize theme
+    initializeTheme();
+    setupSystemThemeDetection();
+    
+    // Set up theme toggle click handler
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleTheme);
+    }
     
     // Helper function to format scores relative to par
     function formatScoreRelPar(score) {
@@ -282,9 +428,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const classes = [
             'player-score-details',
             'border',
+            'border-color',
             'rounded-lg',
             'p-4',
             'mb-4',
+            'card-bg',
             player.isDropped ? 'dropped-player' : '',
             player.isTiebreaker ? 'tiebreaker-player' : ''
         ].join(' ');
@@ -326,8 +474,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Generate rounds table
         let roundsHTML = `
             <div class="score-table mt-4">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                <table class="w-full text-sm text-left">
+                    <thead class="text-xs uppercase bg-opacity-50 bg-gray-200">
                         <tr>
                             <th scope="col" class="px-4 py-2">Round</th>
                             <th scope="col" class="px-4 py-2">R1</th>
@@ -337,22 +485,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="bg-white border-b">
-                            <th scope="row" class="px-4 py-2 font-medium text-gray-900">Strokes</th>
+                        <tr class="card-bg border-b border-color">
+                            <th scope="row" class="px-4 py-2 font-medium">Strokes</th>
                             <td class="px-4 py-2">${player.rounds_strokes[0] || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_strokes[1] || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_strokes[2] || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_strokes[3] || '-'}</td>
                         </tr>
-                        <tr class="bg-white border-b">
-                            <th scope="row" class="px-4 py-2 font-medium text-gray-900">To Par</th>
+                        <tr class="card-bg border-b border-color">
+                            <th scope="row" class="px-4 py-2 font-medium">To Par</th>
                             <td class="px-4 py-2">${player.rounds_par[0] === '-' ? '-' : formatScoreRelPar(player.rounds_par[0]) || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_par[1] === '-' ? '-' : formatScoreRelPar(player.rounds_par[1]) || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_par[2] === '-' ? '-' : formatScoreRelPar(player.rounds_par[2]) || '-'}</td>
                             <td class="px-4 py-2">${player.rounds_par[3] === '-' ? '-' : formatScoreRelPar(player.rounds_par[3]) || '-'}</td>
                         </tr>
-                        <tr class="bg-white">
-                            <th scope="row" class="px-4 py-2 font-medium text-gray-900">Cumulative (Par)</th>
+                        <tr class="card-bg">
+                            <th scope="row" class="px-4 py-2 font-medium">Cumulative (Par)</th>
                             <td class="px-4 py-2">${player.cumulative_par[0] === 0 && player.rounds_par[0] === '-' ? '-' : formatScoreRelPar(player.cumulative_par[0]) || '-'}</td>
                             <td class="px-4 py-2">${player.cumulative_par[1] === 0 && player.rounds_par[1] === '-' ? '-' : formatScoreRelPar(player.cumulative_par[1]) || '-'}</td>
                             <td class="px-4 py-2">${player.cumulative_par[2] === 0 && player.rounds_par[2] === '-' ? '-' : formatScoreRelPar(player.cumulative_par[2]) || '-'}</td>
@@ -377,7 +525,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="text-right">
                         <div class="text-sm">Total: ${player.total_strokes}</div>
-                        <div class="text-lg font-bold ${player.total_par_numeric < 0 ? 'text-green-600' : player.total_par_numeric > 0 ? 'text-red-600' : 'text-gray-800'}">
+                        <div class="text-lg font-bold ${player.total_par_numeric < 0 ? 'text-green-600' : player.total_par_numeric > 0 ? 'text-red-600' : ''}">
                             ${player.total_par_string}
                         </div>
                     </div>
@@ -414,8 +562,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         return `
-            <div class="participant-entry bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                <button class="participant-header w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors" 
+            <div class="participant-entry rounded-lg shadow-md overflow-hidden border">
+                <button class="participant-header w-full flex justify-between items-center p-4 text-left transition-colors" 
                         onclick="toggleParticipantDetails('${participantId}')">
                     <div class="flex items-center">
                         <span class="font-bold text-lg mr-4">${rank}</span>
@@ -428,7 +576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     <div class="flex items-center">
                         <div class="text-right mr-7">
                             <div class="text-sm text-right">Total Score</div>
-                            <div class="text-xl font-bold text-right ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : 'text-gray-800'}">
+                            <div class="text-xl font-bold text-right ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
                                 ${participant.totalPoolScore_par_string}
                             </div>
                             <div class="text-xs text-gray-500 text-right">Tiebreaker: ${participant.tiebreakerScore_par_string === '?' ? '-' : participant.tiebreakerScore_par_string}</div>
@@ -439,7 +587,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                 </button>
                 
-                <div id="details-${participantId}" class="participant-details hidden p-4 border-t border-gray-200">
+                <div id="details-${participantId}" class="participant-details hidden p-4 border-t border-color">
                     ${participant.players.map((player, index) => generatePlayerScoreHTML(player, index)).join('')}
                 </div>
             </div>
