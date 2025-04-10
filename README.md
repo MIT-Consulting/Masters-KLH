@@ -13,7 +13,6 @@ A web application for tracking and displaying leaderboard data for the KLH Maste
 - HTML/CSS/JavaScript
 - Tailwind CSS for styling
 - Supabase for backend data
-- PapaParse for data parsing
 
 ## Setup
 
