@@ -598,8 +598,24 @@ document.addEventListener('DOMContentLoaded', async function() {
     window.toggleParticipantDetails = function(participantId) {
         const details = document.getElementById(`details-${participantId}`);
         const icon = document.getElementById(`icon-${participantId}`);
+        const participantHeader = document.querySelector(`[onclick*="toggleParticipantDetails('${participantId}')"]`);
         
+        // First toggle the hidden class 
         details.classList.toggle('hidden');
+        
+        // Find the player image
+        const playerImage = participantHeader.querySelector('.player-image');
+        if (playerImage) {
+            // Apply expanded class when details are VISIBLE (not hidden)
+            // This is what was reversed previously
+            if (details.classList.contains('hidden')) {
+                playerImage.classList.remove('player-image-expanded');
+            } else {
+                playerImage.classList.add('player-image-expanded');
+            }
+        }
+        
+        // Toggle rotation
         icon.classList.toggle('rotate-180');
     };
 
