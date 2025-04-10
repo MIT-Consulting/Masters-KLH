@@ -1,0 +1,51 @@
+.masters-green {
+    background-color: #1a4a2a;
+}
+.masters-yellow {
+    background-color: #fdda24;
+}
+.text-masters-green {
+    color: #1a4a2a;
+}
+.text-masters-yellow {
+    color: #fdda24;
+}
+.border-masters-green {
+    border-color: #1a4a2a;
+}
+.border-masters-yellow {
+    border-color: #fdda24;
+}
+.bg-masters-green {
+    background-color: #1a4a2a;
+}
+.bg-masters-yellow {
+    background-color: #fdda24;
+}
+.score-table {
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.dropped-player {
+    opacity: 0.6;
+    background-color: #f3f4f6;
+}
+.tiebreaker-player {
+    border-left: 4px solid #fdda24;
+}
+.hidden {
+    display: none;
+}
+.loading-spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid #fdda24;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+} 
