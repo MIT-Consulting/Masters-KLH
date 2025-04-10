@@ -18,4 +18,3 @@ A web application for tracking and displaying leaderboard data for the KLH Maste
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Run the application locally (add specific instructions if you have a build process) 
