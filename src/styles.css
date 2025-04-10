@@ -230,4 +230,13 @@ body {
 /* Direct body override for dark mode - highest specificity */
 body.dark {
     background-color: var(--bg-color) !important;
+}
+
+/* Make leaderboard description text darker in light mode for better readability */
+#leaderboard > div.mb-6 > p {
+    color: #4b5563; /* Darker gray for light mode */
+}
+
+.dark #leaderboard > div.mb-6 > p {
+    color: #d1d5db; /* Light gray for dark mode (matches dark:text-gray-300) */
 } 
