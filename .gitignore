@@ -26,6 +26,7 @@ build/
 *.njsproj
 *.sln
 *.sw?
+.tools/
 
 # OS specific
 .DS_Store
