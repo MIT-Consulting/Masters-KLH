@@ -1,15 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
     --bg-color: #f9fafb;
     --text-color: #111827;
     --card-bg: #ffffff;
     --border-color: #e5e7eb;
-    --header-footer-bg: #1a4a2a;
+    --header-footer-bg: #006747;
     --header-footer-text: #ffffff;
     --highlight-color: #fdda24;
     --secondary-bg: #f3f4f6;
-    --masters-green-color: #1a4a2a;
+    --masters-green-color: #059669;
     --gray-text: #6b7280;
     --card-header-hover: rgba(0, 0, 0, 0.05);
+    --font-family: 'Inter', 'Benton Sans', BentonSans, Arial, Helvetica, sans-serif;
 }
 
 .dark {
@@ -17,11 +20,11 @@
     --text-color: #e5e7eb;
     --card-bg: #171f2a;
     --border-color: #2d3748;
-    --header-footer-bg: #0f3119;
+    --header-footer-bg: #006747;
     --header-footer-text: #ffffff;
     --highlight-color: #fdda24;
     --secondary-bg: #2d3748;
-    --masters-green-color: #3acf55;
+    --masters-green-color: #34d399;
     --gray-text: #b0b7c2;
     --card-header-hover: rgba(255, 255, 255, 0.05);
 }
@@ -29,6 +32,7 @@
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
+    font-family: var(--font-family);
 }
 
 .card-bg {
@@ -59,13 +63,13 @@ body {
     color: #fdda24;
 }
 .border-masters-green {
-    border-color: #1a4a2a;
+    border-color: #006747;
 }
 .border-masters-yellow {
     border-color: #fdda24;
 }
 .bg-masters-green {
-    background-color: #1a4a2a;
+    background-color: #006747;
 }
 .bg-masters-yellow {
     background-color: #fdda24;
@@ -104,7 +108,7 @@ body {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    border: 2px solid #1a4a2a; /* masters-green border */
+    border: 2px solid #006747; /* masters-green border */
     flex-shrink: 0;
     transition: all 0.5s ease !important; /* Enhanced transition with !important */
 }
@@ -249,4 +253,47 @@ body.dark {
 
 .dark #leaderboard > div.mb-6 > p {
     color: #d1d5db; /* Light gray for dark mode (matches dark:text-gray-300) */
+}
+
+/* Masters logo styling */
+.masters-logo {
+    height: 40px;
+    width: auto;
+    filter: brightness(0) invert(1); /* Makes the logo white */
+    align-self: flex-end; /* Aligns the logo to the bottom of the flex container */
+    margin-bottom: 1em; /* Changed from 2px to 1em as requested */
+}
+
+/* Ensure logo displays correctly on smaller screens */
+@media (max-width: 640px) {
+    .masters-logo {
+        height: 30px;
+    }
+}
+
+/* Add a style for navigation links to match the image */
+.nav-link {
+    font-family: var(--font-family);
+    font-weight: 500;
+    position: relative;
+    text-decoration: none;
+}
+
+.nav-link.active {
+    color: var(--masters-green-color);
+}
+
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--masters-green-color);
+}
+
+/* Remove font-bold from all elements */
+.font-bold {
+    font-weight: normal !important;
 } 
