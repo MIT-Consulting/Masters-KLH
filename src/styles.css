@@ -13,6 +13,7 @@
     --gray-text: #6b7280;
     --card-header-hover: rgba(0, 0, 0, 0.05);
     --font-family: 'Inter', 'Benton Sans', BentonSans, Arial, Helvetica, sans-serif;
+    --sticky-header-top: 0px; /* Default, will be updated by JS */
 }
 
 .dark {
@@ -343,4 +344,20 @@ body.dark {
 
 body > header > div.container {
     max-width: 875px; /* 768px + 10% */
+}
+
+/* Styles for sticky participant header */
+.participant-entry.expanded .participant-header {
+    position: sticky;
+    top: 0px;
+    z-index: 10; /* Ensure it's above details but below modals */
+    background-color: var(--card-bg); /* Prevent content showing through */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Add separation */
+    /* Add a transition for smoother appearance if needed */
+    /* transition: top 0.2s ease-in-out; */
+}
+
+/* Adjust shadow for dark mode */
+.dark .participant-entry.expanded .participant-header {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 } 

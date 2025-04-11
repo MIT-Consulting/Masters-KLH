@@ -157,6 +157,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         themeToggle.addEventListener('click', toggleTheme);
     }
     
+    // Set initial sticky offset after a brief delay and add resize listener
+    setTimeout(setStickyHeaderOffset, 0); // Delay calculation slightly
+    window.addEventListener('resize', setStickyHeaderOffset);
+    
     // Helper function to format scores relative to par
     function formatScoreRelPar(score) {
         if (score === 0) return 'E';
@@ -562,7 +566,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         return `
-            <div class="participant-entry rounded-lg shadow-md overflow-hidden border">
+            <div class="participant-entry rounded-lg shadow-md border">
                 <button class="participant-header w-full flex justify-between items-center p-4 text-left transition-colors" 
                         onclick="toggleParticipantDetails('${participantId}')">
                     <div class="flex items-center">
@@ -594,13 +598,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         `;
     }
 
+    // Function to calculate and set the sticky header offset
+    function setStickyHeaderOffset() {
+        const header = document.querySelector('body > header');
+        if (header) {
+            // Use getBoundingClientRect for potentially more accurate height
+            const headerHeight = header.getBoundingClientRect().height;
+            document.documentElement.style.setProperty('--sticky-header-top', `${headerHeight}px`);
+            console.log(`Sticky header top offset set to: ${headerHeight}px`); // Add logging
+        } else {
+            console.error("Main header element not found for offset calculation.");
+        }
+    }
+
     // Toggle participant details
     window.toggleParticipantDetails = function(participantId) {
         const details = document.getElementById(`details-${participantId}`);
         const icon = document.getElementById(`icon-${participantId}`);
         const participantHeader = document.querySelector(`[onclick*="toggleParticipantDetails('${participantId}')"]`);
-        
-        // First toggle the hidden class 
+        const participantEntry = participantHeader.closest('.participant-entry'); // Get the parent entry
+
+        // First toggle the hidden class
         details.classList.toggle('hidden');
         
         // Find the player image
@@ -617,6 +635,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Toggle rotation
         icon.classList.toggle('rotate-180');
+
+        // Toggle the expanded class on the parent entry
+        if (participantEntry) {
+            participantEntry.classList.toggle('expanded', !details.classList.contains('hidden'));
+        }
     };
 
     // Main function to load and process data
