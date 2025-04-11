@@ -163,84 +163,101 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Helper function to format scores relative to par
     function formatScoreRelPar(score) {
-        if (score === 0) return 'E';
-        if (score < 0) return score.toString();
-        return `+${score}`;
+        // Ensure score is a number before processing
+        const numericScore = Number(score);
+        if (isNaN(numericScore)) return '-'; // Return dash if score is not a number
+        if (numericScore === 0) return 'E';
+        if (numericScore < 0) return numericScore.toString();
+        return `+${numericScore}`;
     }
 
-    // Function to show the update notification
-    function showUpdateNotification() {
-        // Set flag to indicate updates are available
-        updatesAvailable = true;
-        
-        // If notification already exists, don't create another one
-        if (document.getElementById('update-notification')) {
-            return;
-        }
-        
-        // Add notification to the header
-        const header = document.querySelector('header .container');
-        
-        // Create notification wrapper
-        const notification = document.createElement('div');
-        notification.id = 'update-notification';
-        notification.className = 'flex items-center bg-masters-yellow text-gray-800 rounded px-3 py-1';
-        
-        // Create notification text
-        const notificationText = document.createElement('span');
-        notificationText.textContent = 'Updates available';
-        notificationText.className = 'text-sm mr-3';
-        
-        // Create refresh button
-        const refreshButton = document.createElement('button');
-        refreshButton.className = 'bg-white text-gray-800 dark:bg-gray-700 dark:text-white text-xs px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-600 transition';
-        refreshButton.textContent = 'Refresh';
-        refreshButton.onclick = applyUpdates;
-        
-        // Add elements to notification
-        notification.appendChild(notificationText);
-        notification.appendChild(refreshButton);
-        
-        // Add notification to the header
-        header.appendChild(notification);
+    // Helper function to parse 'total' which might be 'E' or a number string
+    function parseTotalScore(total) {
+        if (total === 'E') return 0;
+        const score = parseInt(total, 10);
+        return isNaN(score) ? 0 : score; // Default to 0 if parsing fails
     }
-    
-    // Function to apply updates
+
+    // Function to show a toast notification for updates
+    function showUpdateToast() {
+        // Remove existing toast if any
+        const existingToast = document.querySelector('.update-toast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'update-toast theme-notification'; // Reuse theme-notification styles
+
+        // Icon (using a simple checkmark SVG)
+        const iconDiv = document.createElement('div');
+        iconDiv.className = 'theme-toggle-icon'; // Reuse theme icon container style
+        iconDiv.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-green-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+        `;
+
+        // Text
+        const text = document.createElement('span');
+        text.textContent = 'Leaderboard updated';
+
+        toast.appendChild(iconDiv);
+        toast.appendChild(text);
+        document.body.appendChild(toast);
+
+        // Show toast with animation
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 10);
+
+        // Hide after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            // Remove from DOM after animation completes
+            setTimeout(() => {
+                toast.remove();
+            }, 300); // Matches transition duration
+        }, 3000);
+    }
+
+    // Function to apply updates (now without prompt)
     function applyUpdates() {
-        if (updatesAvailable) {
-            // Remove notification
-            const notification = document.getElementById('update-notification');
-            if (notification) {
-                notification.remove();
+        // Store the expanded sections before refreshing
+        const expandedSections = [];
+        const detailSections = document.querySelectorAll('[id^="details-"]');
+
+        detailSections.forEach(section => {
+            if (!section.classList.contains('hidden')) {
+                expandedSections.push(section.id.replace('details-', ''));
             }
-            
-            // Reset flag
-            updatesAvailable = false;
-            
-            // Store the expanded sections before refreshing
-            const expandedSections = [];
-            const detailSections = document.querySelectorAll('[id^="details-"]');
-            
-            detailSections.forEach(section => {
-                if (!section.classList.contains('hidden')) {
-                    expandedSections.push(section.id.replace('details-', ''));
+        });
+
+        // Reload the data
+        loadLeaderboard().then(() => {
+            // Re-expand the sections that were expanded before
+            expandedSections.forEach(id => {
+                const details = document.getElementById(`details-${id}`);
+                const icon = document.getElementById(`icon-${id}`);
+                const participantEntry = document.querySelector(`#details-${id}`)?.closest('.participant-entry');
+                const playerImage = participantEntry?.querySelector('.player-image');
+
+                if (details && icon) {
+                    details.classList.remove('hidden');
+                    icon.classList.add('rotate-180');
+                    // Re-apply expanded styles if they exist
+                    if (participantEntry) participantEntry.classList.add('expanded');
+                    if (playerImage) playerImage.classList.add('player-image-expanded');
                 }
             });
-            
-            // Reload the data
-            loadLeaderboard().then(() => {
-                // Re-expand the sections that were expanded before
-                expandedSections.forEach(id => {
-                    const details = document.getElementById(`details-${id}`);
-                    const icon = document.getElementById(`icon-${id}`);
-                    
-                    if (details && icon) {
-                        details.classList.remove('hidden');
-                        icon.classList.add('rotate-180');
-                    }
-                });
-            });
-        }
+            // Show success toast
+            showUpdateToast();
+        }).catch(error => {
+            // Handle errors during leaderboard load if necessary
+            console.error("Error applying updates:", error);
+            // Optionally show an error toast here
+        });
     }
 
     // Function to set up realtime subscription
@@ -250,179 +267,261 @@ document.addEventListener('DOMContentLoaded', async function() {
             realtimeChannel.unsubscribe()
         }
 
-        // Create a new subscription
+        // Create a new subscription to espn_golf_scores
         realtimeChannel = supabase
-            .channel('public:players')
-            .on('postgres_changes', 
-                { event: '*', schema: 'public', table: 'players' }, 
+            .channel('public:espn_golf_scores') // Changed channel name
+            .on('postgres_changes',
+                { event: '*', schema: 'public', table: 'espn_golf_scores' }, // Changed table name
                 (payload) => {
-                    console.log('Player data changed:', payload)
-                    // Show notification instead of automatically refreshing
-                    showUpdateNotification();
+                    console.log('ESPN Golf Score data changed:', payload)
+                    applyUpdates(); // Call applyUpdates directly
                 }
             )
             .on('postgres_changes',
                 { event: '*', schema: 'public', table: 'participants' },
                 (payload) => {
                     console.log('Participant data changed:', payload)
-                    // Show notification instead of automatically refreshing
-                    showUpdateNotification();
+                    applyUpdates(); // Call applyUpdates directly
                 }
             )
             .subscribe((status) => {
                 console.log(`Realtime subscription status: ${status}`)
                 if (status === 'SUBSCRIBED') {
-                    console.log('Successfully subscribed to real-time updates')
+                    console.log('Successfully subscribed to real-time updates for espn_golf_scores and participants')
                 }
             })
     }
 
-    // Placeholder function to fetch live scores (simulated data)
+    // Function to fetch live scores from espn_golf_scores table
     async function fetchLiveMastersScores() {
         const { data, error } = await supabase
-            .from('players')
+            .from('espn_golf_scores') // Changed table name
             .select('*')
-        
+
         if (error) throw error
         return data
     }
 
-    // Process player scores with MC/WD rules
+    // Process player scores using data from espn_golf_scores
     function processPlayerScores(playerData) {
         const rounds_strokes = [];
         const rounds_par = [];
         const cumulative_strokes = [];
         const cumulative_par = [];
-        let total_strokes = 0;
-        let total_par_numeric = 0;
-        
-        // Parse rounds if it's a string (from JSONB in Supabase)
-        const rounds = typeof playerData.rounds === 'string' 
-            ? JSON.parse(playerData.rounds) 
-            : playerData.rounds;
-        
-        // Determine thru status
-        let thruStatus = '';
-        if (playerData.status === 'F') {
-            thruStatus = 'F';
-        } else if (playerData.status === 'MC') {
-            thruStatus = 'MC';
-        } else if (playerData.status === 'WD') {
-            thruStatus = 'WD';
-        } else {
-            // Active player - determine current round
-            const lastRoundIndex = rounds.findIndex(score => score === null);
-            thruStatus = lastRoundIndex === -1 ? 'F' : `R${lastRoundIndex}`;
-        }
-        
-        // Process each round - always process 4 rounds
+        let calculated_total_strokes = 0;
+        let calculated_total_par_numeric = 0;
+
+        // Determine player status based on espn_golf_scores data
+        // Use thru field to determine status (e.g., F, WD, MC, tee time, hole number)
+        const thru = playerData.thru || '';
+        let status = '';
+        if (thru.toUpperCase() === 'F') status = 'F';
+        else if (thru.toUpperCase() === 'WD') status = 'WD';
+        else if (thru.toUpperCase() === 'CUT') status = 'MC'; // Assuming 'CUT' maps to 'MC'
+
+        const isFinal = status === 'F';
+        const isWithdrawn = status === 'WD';
+        const isCut = status === 'MC';
+        const isActive = !isFinal && !isWithdrawn && !isCut && thru && !/\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(thru); // Active if thru exists and is not a tee time
+
+        // Use live data from espn_golf_scores
+        // Use to_par for numeric par score, total for raw strokes
+        let live_total_par_numeric = parseTotalScore(playerData.to_par); // Use to_par
+        let live_total_strokes = parseTotalScore(playerData.total); // Use total for strokes
+        let live_thruStatus = thru || '-';
+        let live_today_score = playerData.today ? formatScoreRelPar(playerData.today) : '-';
+
+        // Reconstruct rounds array from r1, r2, r3, r4 columns
+        const rounds = [playerData.r1, playerData.r2, playerData.r3, playerData.r4];
+
+        // Process each round based on reconstructed rounds data
         for (let i = 0; i < 4; i++) {
             let roundScore = rounds[i];
-            
-            // Apply MC/WD rules
-            if (roundScore === null) {
-                if (playerData.status === 'MC' || playerData.status === 'WD') {
+
+            // Check if roundScore is a valid number
+            if (roundScore !== null && roundScore !== undefined && !isNaN(Number(roundScore))) {
+                roundScore = Number(roundScore); // Ensure it's a number
+                const roundPar = roundScore - COURSE_PAR;
+                rounds_strokes.push(roundScore);
+                rounds_par.push(roundPar);
+                calculated_total_strokes += roundScore;
+                calculated_total_par_numeric += roundPar;
+                cumulative_strokes.push(calculated_total_strokes);
+                cumulative_par.push(calculated_total_par_numeric);
+            } else {
+                // Handle incomplete rounds or WD/MC based on determined status
+                if (isWithdrawn || isCut) {
                     roundScore = WD_MC_SCORE;
                     const roundPar = roundScore - COURSE_PAR;
                     rounds_strokes.push(roundScore);
                     rounds_par.push(roundPar);
-                    total_strokes += roundScore;
-                    total_par_numeric += roundPar;
-                    cumulative_strokes.push(total_strokes);
-                    cumulative_par.push(total_par_numeric);
+                    // Only add WD/MC score if it hasn't been added yet
+                    if (rounds_strokes.filter(s => s === WD_MC_SCORE).length <= (i + 1 - rounds_strokes.filter(s => s !== '-' && s !== WD_MC_SCORE).length)) {
+                         calculated_total_strokes += roundScore;
+                         calculated_total_par_numeric += roundPar;
+                    }
+                    cumulative_strokes.push(calculated_total_strokes);
+                    cumulative_par.push(calculated_total_par_numeric);
                 } else {
-                    // Active player hasn't played this round yet - add placeholder
+                    // Player is active or hasn't started this round yet
                     rounds_strokes.push('-');
                     rounds_par.push('-');
-                    // Don't increment total for placeholder rounds
-                    // Use the same cumulative value as the previous round or 0 if first round
-                    cumulative_strokes.push(cumulative_strokes.length > 0 ? cumulative_strokes[cumulative_strokes.length-1] : 0);
-                    cumulative_par.push(cumulative_par.length > 0 ? cumulative_par[cumulative_par.length-1] : 0);
+                    cumulative_strokes.push(cumulative_strokes.length > 0 ? cumulative_strokes[cumulative_strokes.length - 1] : calculated_total_strokes);
+                    cumulative_par.push(cumulative_par.length > 0 ? cumulative_par[cumulative_par.length - 1] : calculated_total_par_numeric);
                 }
-            } else {
-                const roundPar = roundScore - COURSE_PAR;
-                rounds_strokes.push(roundScore);
-                rounds_par.push(roundPar);
-                total_strokes += roundScore;
-                total_par_numeric += roundPar;
-                cumulative_strokes.push(total_strokes);
-                cumulative_par.push(total_par_numeric);
             }
         }
-        
+
+        // Determine final values to return, prioritizing live data
+        let final_total_par_numeric;
+        let final_total_strokes;
+        let final_thruStatus = live_thruStatus;
+        let final_today_score = live_today_score;
+        let final_status = status; // Use status derived from 'thru'
+
+        if (isFinal || isWithdrawn || isCut) {
+            final_total_par_numeric = calculated_total_par_numeric;
+            final_total_strokes = calculated_total_strokes;
+            final_status = status; // Use F, WD, MC
+            final_thruStatus = status; // Display F, WD, MC as thru status too
+        } else if (isActive || /\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(thru)) { // If active or has tee time
+            final_total_par_numeric = live_total_par_numeric; // Use live to_par
+            final_total_strokes = live_total_strokes;         // Use live total strokes
+            final_thruStatus = live_thruStatus;             // Use live thru status
+            final_status = ''; // No definitive F/WD/MC status yet
+        } else {
+            // Player hasn't started or data is missing/invalid
+            final_total_par_numeric = 0;
+            final_total_strokes = 0;
+            final_thruStatus = '-';
+            final_today_score = '-';
+            final_status = '';
+        }
+
+        // Ensure total strokes isn't NaN if live_total_strokes was invalid
+        if (isNaN(final_total_strokes)) {
+             final_total_strokes = calculated_total_strokes; // Fallback to calculated
+        }
+
         return {
-            name: playerData.name,
-            status: playerData.status,
-            thruStatus,
+            name: playerData.player_name, // Use player_name
+            status: final_status,       // Status derived from 'thru' (F, WD, MC, or blank)
+            thruStatus: final_thruStatus, // More detailed live status (Thru 14, F, WD, MC, Tee Time, -)
+            todayScore: final_today_score, // Score for the current day
             rounds_strokes,
             rounds_par,
             cumulative_strokes,
             cumulative_par,
-            total_strokes,
-            total_par_numeric,
-            total_par_string: formatScoreRelPar(total_par_numeric)
+            total_strokes: final_total_strokes,
+            total_par_numeric: final_total_par_numeric,
+            total_par_string: formatScoreRelPar(final_total_par_numeric)
         };
     }
 
     // Calculate participant's pool score
     function calculatePoolScore(participant, liveScores) {
         const players = [];
-        
+        let activePlayerCount = 0;
+        let finishedPlayerCount = 0;
+        let cutPlayerCount = 0;
+        let withdrawnPlayerCount = 0;
+        let notStartedCount = 0;
+        let teeTimeCount = 0;
+
         // Process each of the 6 picks
         for (let i = 1; i <= 6; i++) {
-            const playerName = participant[`Tier ${i}`];
-            const liveData = liveScores.find(p => p.name === playerName);
-            
+            const participantPlayerName = participant[`Tier ${i}`];
+            // Find player in liveScores using player_name
+            const liveData = liveScores.find(p => p.player_name === participantPlayerName);
+
             if (liveData) {
                 const player = processPlayerScores(liveData);
                 // Add tier information to player
                 player.tier = i;
                 players.push(player);
+
+                // Tally player statuses for participant summary
+                if (player.status === 'F') finishedPlayerCount++;
+                else if (player.status === 'MC') cutPlayerCount++;
+                else if (player.status === 'WD') withdrawnPlayerCount++;
+                else if (/\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(player.thruStatus)) teeTimeCount++; // Has tee time
+                else if (player.thruStatus && player.thruStatus !== '-') activePlayerCount++; // Active on course
+                else notStartedCount++;
+
             } else {
-                // Player not found in live data (shouldn't happen with our sample data)
+                // Player not found in live data
+                console.warn(`Player ${participantPlayerName} not found in espn_golf_scores`);
                 players.push({
-                    name: playerName,
+                    name: participantPlayerName,
                     status: 'Unknown',
-                    thruStatus: '-',
+                    thruStatus: 'MISSING',
+                    todayScore: '-',
                     rounds_strokes: ['-', '-', '-', '-'],
                     rounds_par: ['-', '-', '-', '-'],
                     cumulative_strokes: [0, 0, 0, 0],
                     cumulative_par: [0, 0, 0, 0],
                     total_strokes: 0,
                     total_par_numeric: 0,
-                    total_par_string: '-',
-                    tier: i
+                    total_par_string: 'MISSING',
+                    tier: i,
+                    isMissing: true // Flag missing players
                 });
+                notStartedCount++; // Count as not started for summary purposes
             }
         }
-        
-        // Sort players by total_par_numeric (ascending)
-        players.sort((a, b) => a.total_par_numeric - b.total_par_numeric);
-        
+
+        // Sort players by total_par_numeric (ascending), handle MISSING scores
+        players.sort((a, b) => {
+             // Treat missing/unknown scores as very high
+             const scoreA = a.isMissing ? Infinity : a.total_par_numeric;
+             const scoreB = b.isMissing ? Infinity : b.total_par_numeric;
+             return scoreA - scoreB;
+        });
+
         // Identify the highest score (to drop) and the lowest (tiebreaker)
-        const droppedPlayer = players[players.length - 1];
-        const tiebreakerPlayer = players[0];
-        
-        // Mark these players
-        droppedPlayer.isDropped = true;
-        tiebreakerPlayer.isTiebreaker = true;
-        
-        // Calculate pool score (sum of best 5)
-        const totalPoolScore_par = players.slice(0, -1).reduce((sum, player) => sum + player.total_par_numeric, 0);
-        const totalPoolScore_strokes = players.slice(0, -1).reduce((sum, player) => sum + player.total_strokes, 0);
-        
+        // Ensure droppedPlayer and tiebreakerPlayer are assigned only if players exist
+        let droppedPlayer = null;
+        let tiebreakerPlayer = null;
+        if (players.length > 0) {
+            droppedPlayer = players[players.length - 1];
+            tiebreakerPlayer = players[0];
+            // Mark players, checking if they exist first
+            if (droppedPlayer) droppedPlayer.isDropped = true;
+            if (tiebreakerPlayer) tiebreakerPlayer.isTiebreaker = true;
+        }
+
+
+        // Calculate pool score (sum of best 5), excluding missing players from sum
+        const playersToCount = players.filter(p => !p.isDropped && !p.isMissing);
+        const totalPoolScore_par = playersToCount.reduce((sum, player) => sum + player.total_par_numeric, 0);
+        // Calculate total strokes only if all counted players have valid stroke data
+        const totalPoolScore_strokes = playersToCount.every(p => typeof p.total_strokes === 'number')
+            ? playersToCount.reduce((sum, player) => sum + player.total_strokes, 0)
+            : '-'; // Indicate if strokes can't be summed accurately
+
+        // Generate participant thru status summary
+        let participantThruSummary = [];
+        if (activePlayerCount > 0) participantThruSummary.push(`${activePlayerCount} Active`);
+        if (teeTimeCount > 0) participantThruSummary.push(`${teeTimeCount} Tee Time`);
+        if (finishedPlayerCount > 0) participantThruSummary.push(`${finishedPlayerCount} F`);
+        if (cutPlayerCount > 0) participantThruSummary.push(`${cutPlayerCount} MC`);
+        if (withdrawnPlayerCount > 0) participantThruSummary.push(`${withdrawnPlayerCount} WD`);
+        if (notStartedCount > 0 && participantThruSummary.length === 0) participantThruSummary.push('Not Started');
+        const finalParticipantThruStatus = participantThruSummary.join(', ');
+
+        // Handle missing tiebreaker
+        const tiebreakerScoreNumeric = tiebreakerPlayer && !tiebreakerPlayer.isMissing ? tiebreakerPlayer.total_par_numeric : Infinity;
+        const tiebreakerScoreString = tiebreakerPlayer && !tiebreakerPlayer.isMissing ? tiebreakerPlayer.total_par_string : '-';
+
         return {
             name: participant.Name,
             players,
             totalPoolScore_par,
             totalPoolScore_strokes,
             totalPoolScore_par_string: formatScoreRelPar(totalPoolScore_par),
-            tiebreakerScore_numeric: tiebreakerPlayer.total_par_numeric,
-            tiebreakerScore_par_string: tiebreakerPlayer.total_par_string,
-            thruStatus: players.every(p => p.thruStatus === '-') ? 
-                '' : players.some(p => p.thruStatus !== 'F' && p.thruStatus !== '-') ? 
-                players.filter(p => p.thruStatus !== 'F' && p.thruStatus !== '-').map(p => p.thruStatus).join(', ') : 
-                players.some(p => p.thruStatus === 'F') ? 'F' : '',
+            tiebreakerScore_numeric: tiebreakerScoreNumeric,
+            tiebreakerScore_par_string: tiebreakerScoreString,
+            thruStatus: finalParticipantThruStatus, // Updated summary
             photo_url: participant.photo_url
         };
     }
@@ -440,29 +539,45 @@ document.addEventListener('DOMContentLoaded', async function() {
             player.isDropped ? 'dropped-player' : '',
             player.isTiebreaker ? 'tiebreaker-player' : ''
         ].join(' ');
-        
-        let statusBadge = '';
+
+        let statusContent = '';
+        // Use player.status for definitive WD/MC/F, otherwise use thruStatus
         if (player.status === 'MC') {
-            statusBadge = '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded">MC</span>';
+            statusContent = '<span class="badge bg-red-100 text-red-800">MC</span>';
         } else if (player.status === 'WD') {
-            statusBadge = '<span class="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">WD</span>';
-        } else if (player.thruStatus !== 'F' && player.thruStatus !== '-') {
-            statusBadge = `<span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">${player.thruStatus}</span>`;
-        } else if (player.thruStatus === 'F') {
-            statusBadge = '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">F</span>';
+            statusContent = '<span class="badge bg-orange-100 text-orange-800">WD</span>';
+        } else if (player.status === 'F') {
+            statusContent = '<span class="badge bg-green-100 text-green-800">F</span>';
+        } else if (player.thruStatus && player.thruStatus !== '-') {
+            // Active player or finished for the day but not tournament
+            let thruText = player.thruStatus;
+            // Check if thruStatus looks like a tee time (e.g., "1:10 PM")
+            const isTeeTime = /\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(thruText);
+            if (isTeeTime) {
+                statusContent = `<span class="badge bg-gray-200 text-gray-800">${thruText}</span>`; // Tee time
+            } else {
+                // Active on course or finished round
+                 statusContent = `<span class="badge bg-blue-100 text-blue-800">${thruText}</span>`;
+                 // Add today's score if available and not 0 or E
+                 if (player.todayScore && player.todayScore !== '-' && player.todayScore !== 'E' && player.todayScore !== '0') {
+                    const todayScoreClass = parseInt(player.todayScore) < 0 ? 'text-green-600' : parseInt(player.todayScore) > 0 ? 'text-red-600' : 'text-gray-700';
+                    statusContent += ` <span class="text-xs ${todayScoreClass}">(Today: ${player.todayScore})</span>`;
+                 }
+            }
+        } else {
+             statusContent = '<span class="badge bg-gray-100 text-gray-600">-</span>'; // Not started or unknown
         }
-        // No badge for players with thruStatus === '-' (no data available)
-        
+
         let droppedIndicator = '';
         if (player.isDropped) {
-            droppedIndicator = '<span class="bg-gray-200 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">Dropped</span>';
+            droppedIndicator = '<span class="badge bg-gray-200 text-gray-800 ml-2">Dropped</span>';
         }
-        
+
         let tiebreakerIndicator = '';
         if (player.isTiebreaker) {
-            tiebreakerIndicator = '<span class="bg-masters-yellow text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded ml-2">Tiebreaker</span>';
+            tiebreakerIndicator = '<span class="badge bg-masters-yellow text-gray-800 ml-2">Tiebreaker</span>';
         }
-        
+
         // Add tier badge - different colors for different tiers
         const tierColors = {
             1: 'bg-purple-100 text-purple-800',
@@ -472,9 +587,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             5: 'bg-orange-100 text-orange-800',
             6: 'bg-red-100 text-red-800'
         };
-        
-        const tierBadge = `<span class="${tierColors[player.tier]} text-xs font-medium px-2.5 py-0.5 rounded ml-2">Tier ${player.tier}</span>`;
-        
+
+        const tierBadge = `<span class="badge ${tierColors[player.tier]} ml-2">Tier ${player.tier}</span>`;
+
+        // Simplify badge class usage - Tailwind should handle this
+        const badgeBaseClass = "text-xs font-medium px-2.5 py-0.5 rounded";
+        statusContent = statusContent.replace(/class="badge /g, `class="${badgeBaseClass} `);
+        droppedIndicator = droppedIndicator.replace(/class="badge /g, `class="${badgeBaseClass} `);
+        tiebreakerIndicator = tiebreakerIndicator.replace(/class="badge /g, `class="${badgeBaseClass} `);
+        const tierBadgeHtml = tierBadge.replace(/class="badge /g, `class="${badgeBaseClass} `);
+
         // Generate rounds table
         let roundsHTML = `
             <div class="score-table mt-4">
@@ -514,22 +636,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                 </table>
             </div>
         `;
-        
+
         return `
             <div class="${classes}">
-                <div class="flex justify-between items-center">
+                <div class="flex justify-between items-center mb-3">
                     <div>
-                        <h4 class="font-bold text-masters-green">${player.name}</h4>
-                        <div class="mt-1">
-                            ${statusBadge}
-                            ${tierBadge}
+                        <h4 class="font-medium text-masters-green">${player.name}</h4>
+                        <div class="mt-1 flex flex-wrap gap-1">
+                            ${statusContent}
+                            ${tierBadgeHtml}
                             ${droppedIndicator}
                             ${tiebreakerIndicator}
                         </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-sm">Total: ${player.total_strokes}</div>
-                        <div class="text-lg font-bold ${player.total_par_numeric < 0 ? 'text-green-600' : player.total_par_numeric > 0 ? 'text-red-600' : ''}">
+                    <div class="text-right flex-shrink-0 ml-2">
+                        <div class="text-sm">Total: ${player.total_strokes !== null ? player.total_strokes : '-'}</div>
+                        <div class="text-lg font-medium ${player.total_par_numeric < 0 ? 'text-green-600' : player.total_par_numeric > 0 ? 'text-red-600' : ''}">
                             ${player.total_par_string}
                         </div>
                     </div>
@@ -573,17 +695,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                         <span class="participant-rank text-lg mr-4">${participant.displayRank}</span>
                         ${avatarHtml}
                         <div>
-                            <h3 class="text-masters-green">${participant.name}</h3>
-                            ${participant.thruStatus ? `<div class="text-sm text-gray-500">Thru: ${participant.thruStatus}</div>` : ''}
+                            <h3 class="text-masters-green font-medium">${participant.name}</h3>
+                            ${participant.thruStatus ? `<div class="text-xs text-gray-500 mt-1">${participant.thruStatus}</div>` : ''}
                         </div>
                     </div>
                     <div class="flex items-center">
-                        <div class="text-right mr-7">
-                            <div class="text-sm text-right">Total Score</div>
-                            <div class="text-xl text-right ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
+                        <div class="text-right mr-4">
+                            <div class="text-sm text-right">Pool Score</div>
+                            <div class="text-xl text-right font-medium ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
                                 ${participant.totalPoolScore_par_string}
                             </div>
-                            <div class="text-xs text-gray-500 text-right">Tiebreaker: ${participant.tiebreakerScore_par_string === '?' ? '-' : participant.tiebreakerScore_par_string}</div>
+                            <div class="text-xs text-gray-500 text-right mt-1">Tiebreaker: ${participant.tiebreakerScore_par_string === '?' || participant.tiebreakerScore_par_string === '-' ? '-' : participant.tiebreakerScore_par_string}</div>
                         </div>
                         <svg id="icon-${participantId}" class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
