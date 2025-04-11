@@ -540,7 +540,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Generate HTML for a participant's entry
-    function generateParticipantHTML(participant, rank) {
+    function generateParticipantHTML(participant) {
         const participantId = participant.name.replace(/\s+/g, '-').toLowerCase();
         
         // Get initials for avatar
@@ -570,17 +570,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <button class="participant-header w-full flex justify-between items-center p-4 text-left transition-colors" 
                         onclick="toggleParticipantDetails('${participantId}')">
                     <div class="flex items-center">
-                        <span class="font-bold text-lg mr-4">${rank}</span>
+                        <span class="participant-rank text-lg mr-4">${participant.displayRank}</span>
                         ${avatarHtml}
                         <div>
-                            <h3 class="font-bold text-masters-green">${participant.name}</h3>
+                            <h3 class="text-masters-green">${participant.name}</h3>
                             ${participant.thruStatus ? `<div class="text-sm text-gray-500">Thru: ${participant.thruStatus}</div>` : ''}
                         </div>
                     </div>
                     <div class="flex items-center">
                         <div class="text-right mr-7">
                             <div class="text-sm text-right">Total Score</div>
-                            <div class="text-xl font-bold text-right ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
+                            <div class="text-xl text-right ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
                                 ${participant.totalPoolScore_par_string}
                             </div>
                             <div class="text-xs text-gray-500 text-right">Tiebreaker: ${participant.tiebreakerScore_par_string === '?' ? '-' : participant.tiebreakerScore_par_string}</div>
@@ -685,10 +685,42 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 return a.tiebreakerScore_numeric - b.tiebreakerScore_numeric;
             });
+
+            // Calculate ranks with tie handling
+            let currentRank = 0;
+            let actualRank = 0;
+            let prevScore = null;
+            let prevTiebreaker = null;
+
+            participants.forEach((participant, index) => {
+                actualRank++; // Increments for each person regardless of score
+                // Update the rank number only if the current participant's score/tiebreaker is different from the previous one
+                if (participant.totalPoolScore_par !== prevScore || participant.tiebreakerScore_numeric !== prevTiebreaker) {
+                    currentRank = actualRank; // Set the new rank number
+                    prevScore = participant.totalPoolScore_par;
+                    prevTiebreaker = participant.tiebreakerScore_numeric;
+                }
+                participant.rankValue = currentRank; // Store the numeric rank for tie checking
+            });
+
+            // Add 'T' for ties
+            participants.forEach((participant, index) => {
+                let isTied = false;
+                // Check if the next participant has the same rank value
+                if (index + 1 < participants.length && participants[index + 1].rankValue === participant.rankValue) {
+                    isTied = true;
+                }
+                // Check if the previous participant has the same rank value
+                if (index > 0 && participants[index - 1].rankValue === participant.rankValue) {
+                    isTied = true;
+                }
+                // Assign the final display rank string (e.g., "1", "2T")
+                participant.displayRank = participant.rankValue + (isTied ? 'T' : '');
+            });
             
-            // Generate leaderboard HTML
-            const leaderboardHTML = participants.map((participant, index) => 
-                generateParticipantHTML(participant, index + 1)
+            // Generate leaderboard HTML using the calculated displayRank
+            const leaderboardHTML = participants.map(participant => 
+                generateParticipantHTML(participant) // Pass the participant object with the new displayRank property
             ).join('');
             
             // Update the DOM

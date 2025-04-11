@@ -360,4 +360,11 @@ body > header > div.container {
 /* Adjust shadow for dark mode */
 .dark .participant-entry.expanded .participant-header {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Style for consistent rank width */
+.participant-rank {
+    display: inline-block; /* Needed for width and text-align */
+    min-width: 2.5em;      /* Adjust as needed for desired width */
+    text-align: center;
 } 
