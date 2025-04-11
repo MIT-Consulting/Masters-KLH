@@ -179,11 +179,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Function to apply updates (now shows spinner)
+    let spinnerDebounceTimer;
+    let spinnerActive = false;
+
     function applyUpdates() {
         const spinner = document.getElementById('update-spinner');
         if (!spinner) return; // Guard against missing element
 
-        spinner.classList.remove('hidden'); // Show spinner
+        // Clear any previous timeout
+        if (spinnerDebounceTimer) {
+            clearTimeout(spinnerDebounceTimer);
+        }
+
+        // If spinner is already active, don't restart it
+        if (!spinnerActive) {
+            spinnerActive = true;
+            spinner.classList.remove('hidden'); // Show spinner
+        }
 
         // Store the expanded sections before refreshing
         const expandedSections = [];
@@ -213,16 +225,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             });
 
-            // Hide spinner after 500ms
-            setTimeout(() => {
+            // Hide spinner after 500ms with debouncing
+            spinnerDebounceTimer = setTimeout(() => {
                 spinner.classList.add('hidden');
+                spinnerActive = false;
             }, 500);
 
         }).catch(error => {
             // Handle errors during leaderboard load if necessary
             console.error("Error applying updates:", error);
             // Hide spinner even if there's an error
-            spinner.classList.add('hidden'); 
+            spinnerDebounceTimer = setTimeout(() => {
+                spinner.classList.add('hidden');
+                spinnerActive = false;
+            }, 500);
             // Optionally show an error message/toast here
         });
     }
