@@ -613,33 +613,41 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Toggle participant details
     window.toggleParticipantDetails = function(participantId) {
-        const details = document.getElementById(`details-${participantId}`);
-        const icon = document.getElementById(`icon-${participantId}`);
-        const participantHeader = document.querySelector(`[onclick*="toggleParticipantDetails('${participantId}')"]`);
-        const participantEntry = participantHeader.closest('.participant-entry'); // Get the parent entry
+        const clickedDetails = document.getElementById(`details-${participantId}`);
+        const clickedIcon = document.getElementById(`icon-${participantId}`);
+        const clickedEntry = clickedDetails.closest('.participant-entry');
+        const clickedPlayerImage = clickedEntry?.querySelector('.player-image');
 
-        // First toggle the hidden class
-        details.classList.toggle('hidden');
-        
-        // Find the player image
-        const playerImage = participantHeader.querySelector('.player-image');
-        if (playerImage) {
-            // Apply expanded class when details are VISIBLE (not hidden)
-            // This is what was reversed previously
-            if (details.classList.contains('hidden')) {
-                playerImage.classList.remove('player-image-expanded');
-            } else {
-                playerImage.classList.add('player-image-expanded');
+        // Check if the clicked one is currently hidden (meaning we intend to open it)
+        const isOpening = clickedDetails.classList.contains('hidden');
+
+        // First, close all participant details sections
+        const allEntries = document.querySelectorAll('.participant-entry');
+        allEntries.forEach(entry => {
+            const entryId = entry.querySelector('[id^="details-"]')?.id.replace('details-', '');
+            if (entryId) {
+                const details = entry.querySelector(`#details-${entryId}`);
+                const icon = entry.querySelector(`#icon-${entryId}`);
+                const playerImage = entry.querySelector('.player-image');
+                const participantEntryDiv = entry; // The entry itself
+
+                if (details && !details.classList.contains('hidden')) {
+                    details.classList.add('hidden');
+                    if (icon) icon.classList.remove('rotate-180');
+                    if (playerImage) playerImage.classList.remove('player-image-expanded');
+                    if (participantEntryDiv) participantEntryDiv.classList.remove('expanded');
+                }
             }
-        }
-        
-        // Toggle rotation
-        icon.classList.toggle('rotate-180');
+        });
 
-        // Toggle the expanded class on the parent entry
-        if (participantEntry) {
-            participantEntry.classList.toggle('expanded', !details.classList.contains('hidden'));
+        // If we were intending to open the clicked one, open it now
+        if (isOpening) {
+            clickedDetails.classList.remove('hidden');
+            if (clickedIcon) clickedIcon.classList.add('rotate-180');
+            if (clickedPlayerImage) clickedPlayerImage.classList.add('player-image-expanded');
+            if (clickedEntry) clickedEntry.classList.add('expanded');
         }
+        // If we were clicking an already open one, the loop above already closed it.
     };
 
     // Main function to load and process data
