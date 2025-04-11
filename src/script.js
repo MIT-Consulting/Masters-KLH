@@ -178,52 +178,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         return isNaN(score) ? 0 : score; // Default to 0 if parsing fails
     }
 
-    // Function to show a toast notification for updates
-    function showUpdateToast() {
-        // Remove existing toast if any
-        const existingToast = document.querySelector('.update-toast');
-        if (existingToast) {
-            existingToast.remove();
-        }
-
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'update-toast theme-notification'; // Reuse theme-notification styles
-
-        // Icon (using a simple checkmark SVG)
-        const iconDiv = document.createElement('div');
-        iconDiv.className = 'theme-toggle-icon'; // Reuse theme icon container style
-        iconDiv.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-green-500">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-            </svg>
-        `;
-
-        // Text
-        const text = document.createElement('span');
-        text.textContent = 'Leaderboard updated';
-
-        toast.appendChild(iconDiv);
-        toast.appendChild(text);
-        document.body.appendChild(toast);
-
-        // Show toast with animation
-        setTimeout(() => {
-            toast.classList.add('show');
-        }, 10);
-
-        // Hide after 3 seconds
-        setTimeout(() => {
-            toast.classList.remove('show');
-            // Remove from DOM after animation completes
-            setTimeout(() => {
-                toast.remove();
-            }, 300); // Matches transition duration
-        }, 3000);
-    }
-
-    // Function to apply updates (now without prompt)
+    // Function to apply updates (now shows spinner)
     function applyUpdates() {
+        const spinner = document.getElementById('update-spinner');
+        if (!spinner) return; // Guard against missing element
+
+        spinner.classList.remove('hidden'); // Show spinner
+
         // Store the expanded sections before refreshing
         const expandedSections = [];
         const detailSections = document.querySelectorAll('[id^="details-"]');
@@ -251,12 +212,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     if (playerImage) playerImage.classList.add('player-image-expanded');
                 }
             });
-            // Show success toast
-            showUpdateToast();
+
+            // Hide spinner after 500ms
+            setTimeout(() => {
+                spinner.classList.add('hidden');
+            }, 500);
+
         }).catch(error => {
             // Handle errors during leaderboard load if necessary
             console.error("Error applying updates:", error);
-            // Optionally show an error toast here
+            // Hide spinner even if there's an error
+            spinner.classList.add('hidden'); 
+            // Optionally show an error message/toast here
         });
     }
 
@@ -709,7 +676,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         ${avatarHtml}
                         <div>
                             <h3 class="text-masters-green font-medium">${participant.name}</h3>
-                            ${participant.thruStatus ? `<div class="text-xs text-gray-500 mt-1">${participant.thruStatus}</div>` : ''}
+                            <div class="text-xs text-gray-500 mt-1">
+                                ${participant.thruStatus ? participant.thruStatus : ''}
+                                ${participant.thruStatus && participant.tiebreakerScore_par_string !== '-' ? ', ' : ''} 
+                                ${participant.tiebreakerScore_par_string !== '-' ? `Tiebreaker: ${participant.tiebreakerScore_par_string}` : ''}
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center">
@@ -718,7 +689,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                             <div class="text-xl text-right font-medium ${participant.totalPoolScore_par < 0 ? 'text-green-600' : participant.totalPoolScore_par > 0 ? 'text-red-600' : ''}">
                                 ${participant.totalPoolScore_par_string}
                             </div>
-                            <div class="text-xs text-gray-500 text-right mt-1">Tiebreaker: ${participant.tiebreakerScore_par_string === '?' || participant.tiebreakerScore_par_string === '-' ? '-' : participant.tiebreakerScore_par_string}</div>
                         </div>
                         <svg id="icon-${participantId}" class="w-5 h-5 text-gray-500 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>

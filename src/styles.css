@@ -98,10 +98,22 @@ body {
     height: 40px;
     animation: spin 1s linear infinite;
 }
+
+/* Update spinner (smaller version) */
+.update-spinner {
+    border: 2px solid var(--text-color); /* Use text color for border */
+    border-radius: 50%;
+    border-top-color: transparent; /* Make top transparent for spinning effect */
+    width: 16px; /* Smaller size */
+    height: 16px;
+    animation: spin 0.8s linear infinite; /* Slightly faster spin */
+}
+
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
 .player-image {
     width: 60px;
     height: 60px;
