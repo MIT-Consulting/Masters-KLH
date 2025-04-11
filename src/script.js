@@ -710,7 +710,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Use getBoundingClientRect for potentially more accurate height
             const headerHeight = header.getBoundingClientRect().height;
             document.documentElement.style.setProperty('--sticky-header-top', `${headerHeight}px`);
-            console.log(`Sticky header top offset set to: ${headerHeight}px`); // Add logging
+            console.log(`Sticky header top offset set to: ${headerHeight}px`);
         } else {
             console.error("Main header element not found for offset calculation.");
         }
@@ -751,6 +751,36 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (clickedIcon) clickedIcon.classList.add('rotate-180');
             if (clickedPlayerImage) clickedPlayerImage.classList.add('player-image-expanded');
             if (clickedEntry) clickedEntry.classList.add('expanded');
+            
+            // Find the first player record within the details
+            const firstDetailRecord = clickedDetails.querySelector('.player-score-details');
+            
+            if (firstDetailRecord) {
+                // Use setTimeout to ensure DOM is updated before scrolling
+                setTimeout(() => {
+                    // Get the participant header height
+                    const participantHeader = clickedEntry.querySelector('.participant-header');
+                    const participantHeaderHeight = participantHeader ? participantHeader.getBoundingClientRect().height : 0;
+                    
+                    // Add a larger buffer for visual clarity
+                    const scrollOffset = participantHeaderHeight + 25;
+                    
+                    // Get the position of the first detail record
+                    const firstDetailRect = firstDetailRecord.getBoundingClientRect();
+                    
+                    // Check if the first detail record is not fully visible or covered by the header
+                    const isOffscreen = firstDetailRect.top < scrollOffset || 
+                                        firstDetailRect.bottom > window.innerHeight;
+                    
+                    if (isOffscreen) {
+                        // Scroll the first detail record into view with offset for the participant header
+                        window.scrollTo({
+                            top: window.scrollY + firstDetailRect.top - scrollOffset,
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 50); // Small delay to ensure DOM update
+            }
         }
         // If we were clicking an already open one, the loop above already closed it.
     };
