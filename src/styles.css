@@ -333,4 +333,14 @@ body.dark {
         justify-content: center; /* Center the theme toggle and live updates */
         gap: 0.5rem; /* Tailwind gap-2 equivalent */
     }
+}
+
+#leaderboard {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+body > header > div.container {
+    max-width: 875px; /* 768px + 10% */
 } 
