@@ -351,7 +351,7 @@ body > header > div.container {
     position: sticky;
     top: 0px;
     z-index: 10; /* Ensure it's above details but below modals */
-    background-color: var(--card-bg); /* Prevent content showing through */
+    background-color: var(--card-bg) !important; /* Prevent content showing through, ensure override */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Add separation */
     /* Add a transition for smoother appearance if needed */
     /* transition: top 0.2s ease-in-out; */
