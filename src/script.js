@@ -540,8 +540,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             player.isTiebreaker ? 'tiebreaker-player' : ''
         ].join(' ');
 
+        // Determine if the player is actively playing (not F, WD, MC, or just a tee time)
+        const isActive = !['F', 'WD', 'MC', '-'].includes(player.status) && 
+                         player.thruStatus && 
+                         !/\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(player.thruStatus) &&
+                         !['F', 'WD', 'MC', '-'].includes(player.thruStatus);
+
+        // Prepare live score string for active players
+        let liveScoreInfo = '';
+        if (isActive && player.todayScore && player.todayScore !== '-') {
+             const todayScoreClass = parseInt(player.todayScore) < 0 ? 'text-green-600' : parseInt(player.todayScore) > 0 ? 'text-red-600' : 'text-gray-500'; // Use gray for E
+             const thruText = player.thruStatus.includes('Thru') ? player.thruStatus : `thru ${player.thruStatus}`;
+             liveScoreInfo = ` <span class="text-sm font-normal ${todayScoreClass}">(Today: ${player.todayScore} ${thruText})</span>`;
+        }
+
         let statusContent = '';
-        // Use player.status for definitive WD/MC/F, otherwise use thruStatus
+        // Determine primary status badge (excluding Today score)
         if (player.status === 'MC') {
             statusContent = '<span class="badge bg-red-100 text-red-800">MC</span>';
         } else if (player.status === 'WD') {
@@ -549,20 +563,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (player.status === 'F') {
             statusContent = '<span class="badge bg-green-100 text-green-800">F</span>';
         } else if (player.thruStatus && player.thruStatus !== '-') {
-            // Active player or finished for the day but not tournament
             let thruText = player.thruStatus;
-            // Check if thruStatus looks like a tee time (e.g., "1:10 PM")
             const isTeeTime = /\d{1,2}:\d{2}\s*(?:AM|PM)?/i.test(thruText);
             if (isTeeTime) {
                 statusContent = `<span class="badge bg-gray-200 text-gray-800">${thruText}</span>`; // Tee time
-            } else {
-                // Active on course or finished round
-                 statusContent = `<span class="badge bg-blue-100 text-blue-800">${thruText}</span>`;
-                 // Add today's score if available and not 0 or E
-                 if (player.todayScore && player.todayScore !== '-' && player.todayScore !== 'E' && player.todayScore !== '0') {
-                    const todayScoreClass = parseInt(player.todayScore) < 0 ? 'text-green-600' : parseInt(player.todayScore) > 0 ? 'text-red-600' : 'text-gray-700';
-                    statusContent += ` <span class="text-xs ${todayScoreClass}">(Today: ${player.todayScore})</span>`;
+            } else if (isActive) {
+                 // Active on course - show thru status if not already next to name
+                 // Generally covered by liveScoreInfo now, but keep badge for consistency if needed?
+                 // Or just show the blue badge if liveScoreInfo is empty?
+                 if (!liveScoreInfo) { // Only show blue badge if live info isn't displayed by name
+                     statusContent = `<span class="badge bg-blue-100 text-blue-800">${thruText}</span>`;
                  }
+            } else if (player.thruStatus === 'F') { // Handle case where status isn't F but thru is F (end of day)
+                 statusContent = '<span class="badge bg-green-100 text-green-800">F*</span>'; // Indicate finished for day
             }
         } else {
              statusContent = '<span class="badge bg-gray-100 text-gray-600">-</span>'; // Not started or unknown
@@ -639,9 +652,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         return `
             <div class="${classes}">
-                <div class="flex justify-between items-center mb-3">
-                    <div>
-                        <h4 class="font-medium text-masters-green">${player.name}</h4>
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex-grow mr-2">
+                        <h4 class="font-medium text-masters-green">${player.name}${liveScoreInfo}</h4>
                         <div class="mt-1 flex flex-wrap gap-1">
                             ${statusContent}
                             ${tierBadgeHtml}
@@ -649,7 +662,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                             ${tiebreakerIndicator}
                         </div>
                     </div>
-                    <div class="text-right flex-shrink-0 ml-2">
+                    <div class="text-right flex-shrink-0 ml-auto">
                         <div class="text-sm">Total: ${player.total_strokes !== null ? player.total_strokes : '-'}</div>
                         <div class="text-lg font-medium ${player.total_par_numeric < 0 ? 'text-green-600' : player.total_par_numeric > 0 ? 'text-red-600' : ''}">
                             ${player.total_par_string}
